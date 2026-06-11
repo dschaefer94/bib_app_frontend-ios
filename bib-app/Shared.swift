@@ -1,15 +1,12 @@
-//
-//  Shared.swift
-//  JSON-CoreData-Pokemon
-//
-//  Created by Daniel Schäfer / PBD2H24A on 5/7/26.
-//
-
 import Foundation
-class Shared {
-    let dataContoller = DataController()
+
+@MainActor
+final class Shared {
     static let item = Shared()
-    private init () {
-        
+
+    let dataController: DataController
+
+    private init() {
+        dataController = DataController()
     }
 }

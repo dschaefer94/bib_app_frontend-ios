@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct bib_appApp: App {
+    private let dataController = Shared.item.dataController
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(\.managedObjectContext, dataController.viewContext)
         }
     }
 }

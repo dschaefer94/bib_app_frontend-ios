@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24901" systemVersion="25F71" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
-    <entity name="Calendar" representedClassName="Calendar" syncable="YES" codeGenerationType="class">
+    <entity name="Calendar" representedClassName="Calendar" syncable="YES">
         <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <relationship name="events" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="CalendarEvent" inverseName="calendar" inverseEntity="CalendarEvent"/>
     </entity>
@@ -24,9 +24,10 @@
         <attribute name="summary" optional="YES" attributeType="String"/>
         <relationship name="parentEvent" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CalendarEvent" inverseName="originalEvent" inverseEntity="CalendarEvent"/>
     </entity>
-    <entity name="User" representedClassName="User" syncable="YES" codeGenerationType="class">
+    <entity name="User" representedClassName="User" syncable="YES">
         <attribute name="email" optional="YES" attributeType="String"/>
         <attribute name="klasse" optional="YES" attributeType="String"/>
-        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="nachname" optional="YES" attributeType="String"/>
+        <attribute name="vorname" optional="YES" attributeType="String"/>
     </entity>
 </model>

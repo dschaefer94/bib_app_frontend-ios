@@ -8,7 +8,7 @@ struct CalendarResponse: Decodable, Sendable {
 
 struct CalendarEventResponse: Decodable, Sendable {
     let category: String?
-    let descriptions: String?
+    let description: String?
     let end: Date?
     let id: UUID?
     let label: String?
@@ -19,7 +19,6 @@ struct CalendarEventResponse: Decodable, Sendable {
     private enum CodingKeys: String, CodingKey {
         case category
         case description
-        case descriptions
         case end
         case id
         case label
@@ -31,8 +30,7 @@ struct CalendarEventResponse: Decodable, Sendable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         category = try container.decodeIfPresent(String.self, forKey: .category)
-        descriptions = try container.decodeIfPresent(String.self, forKey: .descriptions)
-            ?? container.decodeIfPresent(String.self, forKey: .description)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
         end = try container.decodeIfPresent(Date.self, forKey: .end)
         id = try container.decodeIfPresent(UUID.self, forKey: .id)
         label = try container.decodeIfPresent(String.self, forKey: .label)
@@ -117,20 +115,15 @@ final class DataController {
     }
 
     private func store(_ responseCalendar: CalendarResponse) throws -> Calendar {
-        let request: NSFetchRequest<Calendar> = Calendar.fetchRequest()
-        request.predicate = NSPredicate(format: "timestamp == %@", responseCalendar.timestamp as NSDate)
-        request.fetchLimit = 1
+        try deleteStoredCalendarData()
 
-        let calendar = try viewContext.fetch(request).first ?? Calendar(context: viewContext)
+        let calendar = Calendar(context: viewContext)
         calendar.timestamp = responseCalendar.timestamp
-
-        let oldEvents = calendar.events?.allObjects as? [CalendarEvent] ?? []
-        oldEvents.forEach(viewContext.delete)
 
         for responseEvent in responseCalendar.events {
             let event = CalendarEvent(context: viewContext)
             event.category = responseEvent.category
-            event.descriptions = responseEvent.descriptions
+            event.descriptions = responseEvent.description
             event.end = responseEvent.end
             event.id = responseEvent.id ?? UUID()
             event.label = responseEvent.label
@@ -142,6 +135,20 @@ final class DataController {
 
         try save()
         return calendar
+    }
+
+    private func deleteStoredCalendarData() throws {
+        let eventRequest: NSFetchRequest<CalendarEvent> = CalendarEvent.fetchRequest()
+        let events = try viewContext.fetch(eventRequest)
+        events.forEach(viewContext.delete)
+
+        let originalEventRequest: NSFetchRequest<OriginalEvent> = OriginalEvent.fetchRequest()
+        let originalEvents = try viewContext.fetch(originalEventRequest)
+        originalEvents.forEach(viewContext.delete)
+
+        let calendarRequest: NSFetchRequest<Calendar> = Calendar.fetchRequest()
+        let calendars = try viewContext.fetch(calendarRequest)
+        calendars.forEach(viewContext.delete)
     }
 
     private static func makeDecoder() -> JSONDecoder {

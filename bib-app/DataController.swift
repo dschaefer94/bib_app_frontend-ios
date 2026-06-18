@@ -13,6 +13,7 @@ struct CalendarEventResponse: Decodable, Sendable {
     let id: UUID?
     let label: String?
     let location: String?
+    let read: Bool?
     let start: Date?
     let summary: String?
 
@@ -23,6 +24,7 @@ struct CalendarEventResponse: Decodable, Sendable {
         case id
         case label
         case location
+        case read
         case start
         case summary
     }
@@ -35,6 +37,7 @@ struct CalendarEventResponse: Decodable, Sendable {
         id = try container.decodeIfPresent(UUID.self, forKey: .id)
         label = try container.decodeIfPresent(String.self, forKey: .label)
         location = try container.decodeIfPresent(String.self, forKey: .location)
+        read = try container.decodeIfPresent(Bool.self, forKey: .read)
         start = try container.decodeIfPresent(Date.self, forKey: .start)
         summary = try container.decodeIfPresent(String.self, forKey: .summary)
     }
@@ -128,6 +131,7 @@ final class DataController {
             event.id = responseEvent.id ?? UUID()
             event.label = responseEvent.label
             event.location = responseEvent.location
+            event.read = responseEvent.read ?? responseEvent.labelIsEmpty
             event.start = responseEvent.start
             event.summary = responseEvent.summary
             event.calendar = calendar
@@ -135,6 +139,11 @@ final class DataController {
 
         try save()
         return calendar
+    }
+
+    func markAsRead(_ event: CalendarEvent) throws {
+        event.read = true
+        try save()
     }
 
     private func deleteStoredCalendarData() throws {
@@ -176,5 +185,15 @@ final class DataController {
             throw CalendarImportError.invalidDate(value)
         }
         return decoder
+    }
+}
+
+private extension CalendarEventResponse {
+    var labelIsEmpty: Bool {
+        guard let label = label?.trimmingCharacters(in: .whitespacesAndNewlines) else {
+            return true
+        }
+
+        return label.isEmpty
     }
 }

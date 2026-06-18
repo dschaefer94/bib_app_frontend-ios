@@ -24,6 +24,7 @@ extension CalendarEvent {
     @NSManaged public var id: UUID?
     @NSManaged public var label: String?
     @NSManaged public var location: String?
+    @NSManaged public var read: Bool
     @NSManaged public var start: Date?
     @NSManaged public var summary: String?
     @NSManaged public var calendar: Calendar?

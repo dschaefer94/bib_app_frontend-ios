@@ -103,6 +103,7 @@ struct ContentView: View {
             .flatMap { calendar in
                 calendar.events?.allObjects as? [CalendarEvent] ?? []
             }
+            .filter(\.isVisibleInSchedule)
             .sorted {
                 ($0.start ?? .distantFuture) < ($1.start ?? .distantFuture)
             }
@@ -371,7 +372,7 @@ enum ScheduleBlock: Int, CaseIterable, Identifiable {
         let components = calendar.dateComponents([.hour, .minute], from: start)
         let minutes = (components.hour ?? 0) * 60 + (components.minute ?? 0)
 
-        return minutes == startMinutes
+        return minutes >= startMinutes && minutes < endMinutes
     }
 
     private var startMinutes: Int {
@@ -386,6 +387,21 @@ enum ScheduleBlock: Int, CaseIterable, Identifiable {
             return 13 * 60 + 45
         case .fifth:
             return 15 * 60 + 30
+        }
+    }
+
+    private var endMinutes: Int {
+        switch self {
+        case .first:
+            return 9 * 60 + 30
+        case .second:
+            return 11 * 60 + 20
+        case .third:
+            return 13 * 60
+        case .fourth:
+            return 15 * 60 + 15
+        case .fifth:
+            return 17 * 60
         }
     }
 }
@@ -546,6 +562,12 @@ struct EventNavigationRow: View {
                     .fill(event.subjectColor.opacity(0.28))
             )
             .overlay {
+                if let stripeColor = event.unreadChangeColor {
+                    StripedOverlay(color: stripeColor)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+            }
+            .overlay {
                 if let borderStyle = event.categoryBorderStyle {
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(
@@ -566,6 +588,38 @@ struct EventNavigationRow: View {
         )
         .listRowBackground(Color.clear)
         .listRowSeparator(.hidden)
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            if event.canBeMarkedAsRead {
+                Button {
+                    try? Shared.item.dataController.markAsRead(event)
+                } label: {
+                    Label("Abhaken", systemImage: "checkmark")
+                }
+                .tint(.green)
+            }
+        }
+    }
+}
+
+struct StripedOverlay: View {
+    let color: Color
+
+    var body: some View {
+        GeometryReader { geometry in
+            Path { path in
+                let spacing: CGFloat = 12
+                let size = geometry.size
+                var x = -size.height
+
+                while x < size.width {
+                    path.move(to: CGPoint(x: x, y: size.height))
+                    path.addLine(to: CGPoint(x: x + size.height, y: 0))
+                    x += spacing
+                }
+            }
+            .stroke(color.opacity(0.45), lineWidth: 4)
+        }
+        .allowsHitTesting(false)
     }
 }
 
@@ -661,6 +715,31 @@ extension CalendarEvent {
         return location
     }
 
+    var isVisibleInSchedule: Bool {
+        !(normalizedLabel == "geloescht" && read)
+    }
+
+    var canBeMarkedAsRead: Bool {
+        !read && normalizedLabel != nil
+    }
+
+    var unreadChangeColor: Color? {
+        guard !read else {
+            return nil
+        }
+
+        switch normalizedLabel {
+        case "neu":
+            return .green
+        case "geaendert":
+            return .yellow
+        case "geloescht":
+            return .red
+        default:
+            return nil
+        }
+    }
+
     var timeText: String? {
         switch (start, end) {
         case let (start?, end?):
@@ -701,6 +780,27 @@ extension CalendarEvent {
         }
 
         return lecturer
+    }
+
+    private var normalizedLabel: String? {
+        guard let label = label?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+            .folding(options: .diacriticInsensitive, locale: .current),
+              !label.isEmpty else {
+            return nil
+        }
+
+        switch label {
+        case "neu":
+            return "neu"
+        case "geaendert", "gelandert":
+            return "geaendert"
+        case "geloescht":
+            return "geloescht"
+        default:
+            return nil
+        }
     }
 
     fileprivate func firstThreeCharacterCode(from value: String?) -> String? {

@@ -13,6 +13,7 @@ struct CalendarEventResponse: Decodable, Sendable {
     let id: UUID?
     let label: String?
     let location: String?
+    let originalEvent: OriginalEventResponse?
     let read: Bool?
     let start: Date?
     let summary: String?
@@ -24,6 +25,9 @@ struct CalendarEventResponse: Decodable, Sendable {
         case id
         case label
         case location
+        case originalEvent
+        case originalEventSnakeCase = "original_event"
+        case oldEvent
         case read
         case start
         case summary
@@ -37,10 +41,21 @@ struct CalendarEventResponse: Decodable, Sendable {
         id = try container.decodeIfPresent(UUID.self, forKey: .id)
         label = try container.decodeIfPresent(String.self, forKey: .label)
         location = try container.decodeIfPresent(String.self, forKey: .location)
+        originalEvent = try container.decodeIfPresent(OriginalEventResponse.self, forKey: .originalEvent)
+            ?? container.decodeIfPresent(OriginalEventResponse.self, forKey: .originalEventSnakeCase)
+            ?? container.decodeIfPresent(OriginalEventResponse.self, forKey: .oldEvent)
         read = try container.decodeIfPresent(Bool.self, forKey: .read)
         start = try container.decodeIfPresent(Date.self, forKey: .start)
         summary = try container.decodeIfPresent(String.self, forKey: .summary)
     }
+}
+
+struct OriginalEventResponse: Decodable, Sendable {
+    let description: String?
+    let end: Date?
+    let location: String?
+    let start: Date?
+    let summary: String?
 }
 
 enum CalendarImportError: LocalizedError {
@@ -135,6 +150,17 @@ final class DataController {
             event.start = responseEvent.start
             event.summary = responseEvent.summary
             event.calendar = calendar
+
+            if let responseOriginalEvent = responseEvent.originalEvent {
+                let originalEvent = OriginalEvent(context: viewContext)
+                originalEvent.descriptions = responseOriginalEvent.description
+                originalEvent.end = responseOriginalEvent.end
+                originalEvent.location = responseOriginalEvent.location
+                originalEvent.start = responseOriginalEvent.start
+                originalEvent.summary = responseOriginalEvent.summary
+                originalEvent.parentEvent = event
+                event.originalEvent = originalEvent
+            }
         }
 
         try save()

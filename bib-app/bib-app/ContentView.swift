@@ -1,6 +1,64 @@
 import CoreData
 import SwiftUI
 
+enum AppStyle {
+    static let orange = Color(hex: 0xff7700)
+    static let teal = Color(hex: 0x009393)
+    static let lime = Color(hex: 0xafca0b)
+    static let magenta = Color(hex: 0xe50b7c)
+    static let blue = Color(hex: 0x12719f)
+
+    static let background = Color(.systemGroupedBackground)
+    static let surface = Color(.secondarySystemGroupedBackground)
+    static let elevatedSurface = Color(.tertiarySystemGroupedBackground)
+    static let primaryText = Color(.label)
+    static let secondaryText = Color(.secondaryLabel)
+
+    static let brandGradient = LinearGradient(
+        colors: [orange, magenta, teal],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    static let subjectPalette = [orange, teal, lime, magenta, blue]
+
+    static func subjectColor(for code: String?) -> Color {
+        guard let code else {
+            return teal
+        }
+
+        let total = code.unicodeScalars.reduce(0) { partialResult, scalar in
+            partialResult + Int(scalar.value)
+        }
+
+        return subjectPalette[abs(total) % subjectPalette.count]
+    }
+}
+
+extension Color {
+    init(hex: Int, opacity: Double = 1) {
+        self.init(
+            .sRGB,
+            red: Double((hex >> 16) & 0xff) / 255,
+            green: Double((hex >> 8) & 0xff) / 255,
+            blue: Double(hex & 0xff) / 255,
+            opacity: opacity
+        )
+    }
+}
+
+extension Font {
+    static let interLargeTitle = Font.custom("Inter", size: 34, relativeTo: .largeTitle).weight(.bold)
+    static let interTitle = Font.custom("Inter", size: 28, relativeTo: .title).weight(.bold)
+    static let interTitle2 = Font.custom("Inter", size: 22, relativeTo: .title2).weight(.semibold)
+    static let interTitle3 = Font.custom("Inter", size: 20, relativeTo: .title3).weight(.semibold)
+    static let interHeadline = Font.custom("Inter", size: 17, relativeTo: .headline).weight(.semibold)
+    static let interBody = Font.custom("Inter", size: 17, relativeTo: .body)
+    static let interSubheadline = Font.custom("Inter", size: 15, relativeTo: .subheadline)
+    static let interCaption = Font.custom("Inter", size: 12, relativeTo: .caption)
+    static let interCaption2 = Font.custom("Inter", size: 11, relativeTo: .caption2)
+}
+
 struct ContentView: View {
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Calendar.timestamp, ascending: false)],
@@ -19,6 +77,7 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             Divider()
+                .overlay(AppStyle.teal.opacity(0.22))
 
             HStack(spacing: 0) {
                 BottomMenuButton(
@@ -47,10 +106,12 @@ struct ContentView: View {
                     action: { select(.profile) }
                 )
             }
-            .padding(.top, 8)
-            .padding(.bottom, 6)
-            .background(.bar)
+            .padding(.top, 10)
+            .padding(.bottom, 8)
+            .background(AppStyle.surface)
+            .shadow(color: AppStyle.blue.opacity(0.08), radius: 12, y: -4)
         }
+        .background(AppStyle.background)
     }
 
     @ViewBuilder
@@ -232,12 +293,20 @@ struct BottomMenuButton: View {
                     .frame(height: 20)
 
                 Text(tab.title)
-                    .font(.caption2)
+                    .font(.interCaption2.weight(.semibold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
-            .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+            .foregroundStyle(isSelected ? AppStyle.orange : AppStyle.secondaryText)
             .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+            .background {
+                if isSelected {
+                    Capsule()
+                        .fill(AppStyle.orange.opacity(0.12))
+                        .padding(.horizontal, 7)
+                }
+            }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -258,7 +327,7 @@ struct TodayView: View {
                 if let errorMessage {
                     Section {
                         Text(errorMessage)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(AppStyle.magenta)
                     }
                 }
 
@@ -267,14 +336,14 @@ struct TodayView: View {
                         EventNavigationRow(event: event, showsTodayDetails: true, addsVerticalSpacing: true)
                     } else {
                         Text("Kein kommender Kurs gespeichert")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppStyle.secondaryText)
                     }
                 }
 
                 Section("Kurse danach") {
                     if laterTodayEvents.isEmpty {
                         Text("Keine weiteren Kurse für heute gespeichert")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppStyle.secondaryText)
                     } else {
                         ForEach(laterTodayEvents, id: \.objectID) { event in
                             EventNavigationRow(event: event, addsVerticalSpacing: true)
@@ -282,6 +351,10 @@ struct TodayView: View {
                     }
                 }
             }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .background(AppStyle.background)
+            .font(.interBody)
             .navigationTitle("Kalender")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -310,7 +383,7 @@ struct ExamsView: View {
                 Section("Kommende Klausuren") {
                     if events.isEmpty {
                         Text("Keine kommenden Klausuren gespeichert")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppStyle.secondaryText)
                     } else {
                         ForEach(events, id: \.objectID) { event in
                             EventNavigationRow(event: event, showsDate: true, showsTodayDetails: true, addsVerticalSpacing: true)
@@ -318,6 +391,10 @@ struct ExamsView: View {
                     }
                 }
             }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .background(AppStyle.background)
+            .font(.interBody)
             .navigationTitle("Klausuren")
         }
     }
@@ -332,7 +409,7 @@ struct ChangesView: View {
                 Section("Änderungen") {
                     if events.isEmpty {
                         Text("Keine Änderungen gespeichert")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppStyle.secondaryText)
                     } else {
                         ForEach(events, id: \.objectID) { event in
                             ChangeEventNavigationRow(event: event)
@@ -340,6 +417,10 @@ struct ChangesView: View {
                     }
                 }
             }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .background(AppStyle.background)
+            .font(.interBody)
             .navigationTitle("Änderungen")
         }
     }
@@ -368,8 +449,8 @@ struct ChangeEventNavigationRow: View {
 
                 if event.isChangedEvent && event.changeDetails.isEmpty {
                     Text("Kein vorheriger Stand gespeichert")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .font(.interSubheadline)
+                        .foregroundStyle(AppStyle.secondaryText)
                 } else if !event.changeDetails.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
                         ForEach(event.changeDetails) { detail in
@@ -383,7 +464,7 @@ struct ChangeEventNavigationRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(event.subjectColor.opacity(0.28))
+                    .fill(event.subjectColor.opacity(0.16))
             )
             .overlay {
                 if let stripeColor = event.unreadChangeColor {
@@ -412,7 +493,7 @@ struct ChangeEventNavigationRow: View {
                 } label: {
                     Label("Abhaken", systemImage: "checkmark")
                 }
-                .tint(.green)
+                .tint(AppStyle.lime)
             }
         }
     }
@@ -424,21 +505,21 @@ struct ChangeDetailRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Label(detail.title, systemImage: detail.systemImage)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .font(.interCaption.weight(.semibold))
+                .foregroundStyle(AppStyle.blue)
 
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(detail.oldValue)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppStyle.secondaryText)
 
                 Image(systemName: "arrow.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .font(.interCaption.weight(.semibold))
+                    .foregroundStyle(AppStyle.teal)
 
                 Text(detail.currentValue)
                     .fontWeight(.semibold)
             }
-            .font(.subheadline)
+            .font(.interSubheadline)
             .lineLimit(2)
             .minimumScaleFactor(0.85)
         }
@@ -467,33 +548,28 @@ struct ProfileView: View {
                     VStack(spacing: 14) {
                         ZStack {
                             Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [.accentColor.opacity(0.85), .cyan.opacity(0.65)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
+                                .fill(AppStyle.brandGradient)
                                 .frame(width: 86, height: 86)
+                                .shadow(color: AppStyle.magenta.opacity(0.22), radius: 12, y: 6)
 
                             Text(initials)
-                                .font(.title.weight(.bold))
+                                .font(.interTitle.weight(.bold))
                                 .foregroundStyle(.white)
                         }
 
                         VStack(spacing: 4) {
                             Text(fullName)
-                                .font(.title3.weight(.semibold))
+                                .font(.interTitle3)
 
                             Label(selectedClass, systemImage: "graduationcap")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                                .font(.interSubheadline)
+                                .foregroundStyle(AppStyle.secondaryText)
                         }
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 18)
                 }
-                .listRowBackground(Color(.secondarySystemGroupedBackground))
+                .listRowBackground(AppStyle.surface)
 
                 Section("Persönliche Daten") {
                     ProfileTextFieldRow(
@@ -521,12 +597,16 @@ struct ProfileView: View {
 
                 Section("Konto") {
                     Label("AWS Cognito wird später angebunden", systemImage: "cloud")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppStyle.secondaryText)
 
                     Label("Datenquelle: ID-Token", systemImage: "key")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppStyle.secondaryText)
                 }
             }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .background(AppStyle.background)
+            .font(.interBody)
             .navigationTitle("Profil")
         }
     }
@@ -681,7 +761,10 @@ struct WeekScheduleView: View {
                         .padding(.top, 12)
                         .padding(.bottom, 16)
                 }
+                .background(AppStyle.background)
             }
+            .background(AppStyle.background)
+            .font(.interBody)
             .navigationTitle("Wochenansicht")
         }
     }
@@ -748,9 +831,9 @@ struct WeekScheduleGrid: View {
                 ForEach(ScheduleBlock.allCases) { block in
                     HStack(alignment: .top, spacing: spacing) {
                         Text(block.title)
-                            .font(.caption2.weight(.semibold))
+                            .font(.interCaption2.weight(.semibold))
                             .monospacedDigit()
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppStyle.secondaryText)
                             .multilineTextAlignment(.trailing)
                             .frame(width: timeColumnWidth, height: cellSize, alignment: .topTrailing)
                             .padding(.top, 6)
@@ -783,12 +866,12 @@ struct WeekDayHeader: View {
     var body: some View {
         VStack(spacing: 2) {
             Text(day.formatted(.dateTime.weekday(.abbreviated)))
-                .font(.caption.weight(.semibold))
+                .font(.interCaption.weight(.semibold))
                 .lineLimit(1)
 
             Text(day.formatted(.dateTime.day().month(.twoDigits)))
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+                .font(.interCaption2)
+                .foregroundStyle(AppStyle.secondaryText)
                 .lineLimit(1)
         }
     }
@@ -800,7 +883,11 @@ struct WeekBlockCell: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 6)
-                .fill(Color(.secondarySystemGroupedBackground))
+                .fill(AppStyle.surface)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(AppStyle.blue.opacity(0.08), lineWidth: 1)
+                }
 
             if !events.isEmpty {
                 HStack(spacing: 3) {
@@ -839,17 +926,17 @@ struct WeekDayColumn: View {
     var body: some View {
         VStack(spacing: 8) {
             Text(day.formatted(.dateTime.weekday(.abbreviated)))
-                .font(.caption.weight(.semibold))
+                .font(.interCaption.weight(.semibold))
                 .frame(maxWidth: .infinity)
 
             Text(day.formatted(.dateTime.day().month(.twoDigits)))
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+                .font(.interCaption2)
+                .foregroundStyle(AppStyle.secondaryText)
                 .frame(maxWidth: .infinity)
 
             if events.isEmpty {
                 Text("-")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppStyle.secondaryText)
                     .frame(maxWidth: .infinity, minHeight: 34)
             } else {
                 ForEach(events, id: \.objectID) { event in
@@ -863,7 +950,7 @@ struct WeekDayColumn: View {
             }
         }
         .padding(8)
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(AppStyle.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
@@ -876,12 +963,12 @@ struct WeekEventTile: View {
         Group {
             if showsIconOnly {
                 Image(systemName: "rectangle.expand.vertical")
-                    .font(.caption.weight(.semibold))
+                    .font(.interCaption.weight(.semibold))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .accessibilityLabel(event.previewTitle)
             } else {
                 Text(event.previewTitle)
-                    .font(.caption.weight(.semibold))
+                    .font(.interCaption.weight(.semibold))
                     .lineLimit(2)
                     .minimumScaleFactor(0.75)
                     .multilineTextAlignment(.center)
@@ -892,8 +979,9 @@ struct WeekEventTile: View {
             .padding(4)
             .background(
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(event.subjectColor.opacity(0.28))
+                    .fill(event.subjectColor.opacity(0.18))
             )
+            .foregroundStyle(AppStyle.primaryText)
             .overlay {
                 if let stripeColor = event.unreadChangeColor {
                     StripedOverlay(color: stripeColor)
@@ -916,8 +1004,8 @@ struct ScheduleLegendView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Legende")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .font(.interCaption.weight(.semibold))
+                .foregroundStyle(AppStyle.blue)
 
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 130), spacing: 8)], alignment: .leading, spacing: 8) {
                 LegendItem(title: "Klausur") {
@@ -925,7 +1013,7 @@ struct ScheduleLegendView: View {
                         .fill(Color.clear)
                         .overlay {
                             RoundedRectangle(cornerRadius: 4)
-                                .stroke(.red, lineWidth: 2)
+                                .stroke(AppStyle.magenta, lineWidth: 2)
                         }
                 }
 
@@ -934,40 +1022,40 @@ struct ScheduleLegendView: View {
                         .fill(Color.clear)
                         .overlay {
                             RoundedRectangle(cornerRadius: 4)
-                                .stroke(.black, style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+                                .stroke(AppStyle.blue, style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
                         }
                 }
 
                 LegendItem(title: "Neu") {
                     RoundedRectangle(cornerRadius: 4)
-                        .fill(.green.opacity(0.12))
+                        .fill(AppStyle.lime.opacity(0.12))
                         .overlay {
-                            StripedOverlay(color: .green)
+                            StripedOverlay(color: AppStyle.lime)
                                 .clipShape(RoundedRectangle(cornerRadius: 4))
                         }
                 }
 
                 LegendItem(title: "Geändert") {
                     RoundedRectangle(cornerRadius: 4)
-                        .fill(.yellow.opacity(0.12))
+                        .fill(AppStyle.orange.opacity(0.12))
                         .overlay {
-                            StripedOverlay(color: .yellow)
+                            StripedOverlay(color: AppStyle.orange)
                                 .clipShape(RoundedRectangle(cornerRadius: 4))
                         }
                 }
 
                 LegendItem(title: "Gelöscht") {
                     RoundedRectangle(cornerRadius: 4)
-                        .fill(.red.opacity(0.12))
+                        .fill(AppStyle.magenta.opacity(0.12))
                         .overlay {
-                            StripedOverlay(color: .red)
+                            StripedOverlay(color: AppStyle.magenta)
                                 .clipShape(RoundedRectangle(cornerRadius: 4))
                         }
                 }
             }
         }
         .padding(10)
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(AppStyle.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
@@ -982,7 +1070,7 @@ struct LegendItem<Symbol: View>: View {
                 .frame(width: 26, height: 18)
 
             Text(title)
-                .font(.caption)
+                .font(.interCaption)
                 .lineLimit(1)
         }
     }
@@ -999,6 +1087,7 @@ struct DateNavigationHeader: View {
                 previousAction()
             } label: {
                 Image(systemName: "chevron.left")
+                    .foregroundStyle(AppStyle.blue)
                     .frame(width: 44, height: 32)
             }
             .buttonStyle(.plain)
@@ -1007,7 +1096,8 @@ struct DateNavigationHeader: View {
             Spacer()
 
             Text(title)
-                .font(.headline)
+                .font(.interHeadline)
+                .foregroundStyle(AppStyle.primaryText)
                 .multilineTextAlignment(.center)
 
             Spacer()
@@ -1016,6 +1106,7 @@ struct DateNavigationHeader: View {
                 nextAction()
             } label: {
                 Image(systemName: "chevron.right")
+                    .foregroundStyle(AppStyle.blue)
                     .frame(width: 44, height: 32)
             }
             .buttonStyle(.plain)
@@ -1039,7 +1130,7 @@ struct EventNavigationRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(event.subjectColor.opacity(0.28))
+                    .fill(event.subjectColor.opacity(0.16))
             )
             .overlay {
                 if let stripeColor = event.unreadChangeColor {
@@ -1075,7 +1166,7 @@ struct EventNavigationRow: View {
                 } label: {
                     Label("Abhaken", systemImage: "checkmark")
                 }
-                .tint(.green)
+                .tint(AppStyle.lime)
             }
         }
     }
@@ -1111,28 +1202,33 @@ struct EventRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(event.previewTitle)
-                .font(.headline)
+                .font(.interHeadline)
+                .foregroundStyle(AppStyle.primaryText)
 
             if showsDate, let start = event.start {
                 Label(start.formatted(date: .abbreviated, time: .omitted), systemImage: "calendar")
-                    .font(.subheadline)
+                    .font(.interSubheadline)
+                    .foregroundStyle(AppStyle.secondaryText)
             }
 
             if showsTodayDetails {
                 if let timeText = event.timeText {
                     Label(timeText, systemImage: "clock")
-                        .font(.subheadline)
+                        .font(.interSubheadline)
+                        .foregroundStyle(AppStyle.secondaryText)
                 }
 
                 if let lecturerText = event.lecturerText {
                     Label(lecturerText, systemImage: "person")
-                        .font(.subheadline)
+                        .font(.interSubheadline)
+                        .foregroundStyle(AppStyle.secondaryText)
                 }
             }
 
             if let location = event.formattedLocation {
                 Label(location, systemImage: "mappin")
-                    .font(.subheadline)
+                    .font(.interSubheadline)
+                    .foregroundStyle(AppStyle.secondaryText)
             }
         }
     }
@@ -1154,20 +1250,7 @@ extension CalendarEvent {
     }
 
     var subjectColor: Color {
-        guard let subjectCode else {
-            return Color(.secondarySystemGroupedBackground)
-        }
-
-        let values = subjectCode.map { characterValue($0) }
-        guard values.count == 3 else {
-            return Color(.secondarySystemGroupedBackground)
-        }
-
-        return Color(
-            red: Double(values[0]) / 35.0,
-            green: Double(values[1]) / 35.0,
-            blue: Double(values[2]) / 35.0
-        )
+        AppStyle.subjectColor(for: subjectCode)
     }
 
     var categoryBorderStyle: (color: Color, dash: [CGFloat])? {
@@ -1177,9 +1260,9 @@ extension CalendarEvent {
 
         switch categoryText {
         case "selbstlernzeit":
-            return (.black, [6, 4])
+            return (AppStyle.blue, [6, 4])
         case "klausur":
-            return (.red, [])
+            return (AppStyle.magenta, [])
         default:
             return nil
         }
@@ -1224,11 +1307,11 @@ extension CalendarEvent {
 
         switch normalizedLabel {
         case "neu":
-            return .green
+            return AppStyle.lime
         case "geaendert":
-            return .yellow
+            return AppStyle.orange
         case "geloescht":
-            return .red
+            return AppStyle.magenta
         default:
             return nil
         }
@@ -1373,22 +1456,6 @@ extension CalendarEvent {
 
         return code
     }
-
-    private func characterValue(_ character: Character) -> Int {
-        let scalars = String(character).unicodeScalars
-        guard let value = scalars.first?.value else {
-            return 0
-        }
-
-        switch value {
-        case 48...57:
-            return Int(value - 48)
-        case 65...90:
-            return Int(value - 55)
-        default:
-            return 0
-        }
-    }
 }
 
 extension OriginalEvent {
@@ -1528,6 +1595,10 @@ struct EventDetailView: View {
                 }
             }
         }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(AppStyle.background)
+        .font(.interBody)
         .navigationTitle(event.summary ?? event.label ?? "Termin")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -1591,9 +1662,10 @@ struct DetailRow: View {
         if let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty {
             HStack {
                 Text(title)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppStyle.secondaryText)
                 Spacer()
                 Text(value)
+                    .foregroundStyle(AppStyle.primaryText)
                     .multilineTextAlignment(.trailing)
             }
         }

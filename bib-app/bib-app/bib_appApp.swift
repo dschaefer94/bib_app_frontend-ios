@@ -15,6 +15,8 @@ struct bib_appApp: App {
         WindowGroup {
             ContentView()
                 .environment(\.managedObjectContext, dataController.viewContext)
+                .font(.interBody)
+                .tint(AppStyle.orange)
         }
     }
 }

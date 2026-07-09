@@ -64,6 +64,7 @@ struct ContentView: View {
             WeekScheduleView(events: allEvents, selectedWeekDate: $selectedWeekDate)
         case .today:
             TodayView(
+                currentEvent: currentEvent,
                 nextEvent: nextEvent,
                 laterTodayEvents: laterTodayEvents,
                 isLoading: isLoading,
@@ -136,6 +137,18 @@ struct ContentView: View {
             }
 
             return start >= now
+        }
+    }
+
+    private var currentEvent: CalendarEvent? {
+        let now = Date()
+        return todaysEvents.first { event in
+            guard let start = event.start,
+                  let end = event.end else {
+                return false
+            }
+
+            return start <= now && now < end
         }
     }
 

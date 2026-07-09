@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct TodayView: View {
+    let currentEvent: CalendarEvent?
     let nextEvent: CalendarEvent?
     let laterTodayEvents: [CalendarEvent]
     let isLoading: Bool
@@ -14,6 +15,15 @@ struct TodayView: View {
                     Section {
                         Text(errorMessage)
                             .foregroundStyle(AppStyle.magenta)
+                    }
+                }
+
+                Section("Aktuelles Fach") {
+                    if let event = currentEvent {
+                        EventNavigationRow(event: event, showsTodayDetails: true, addsVerticalSpacing: true)
+                    } else {
+                        Text("Kein aktueller Kurs gespeichert")
+                            .foregroundStyle(AppStyle.secondaryText)
                     }
                 }
 
@@ -111,4 +121,3 @@ struct ChangesView: View {
         }
     }
 }
-

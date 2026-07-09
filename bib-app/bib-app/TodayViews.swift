@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct TodayView: View {
+    let calendarTimestamp: Date?
     let currentEvent: CalendarEvent?
     let nextEvent: CalendarEvent?
     let laterTodayEvents: [CalendarEvent]
@@ -46,6 +47,16 @@ struct TodayView: View {
                         }
                     }
                 }
+
+                if let calendarTimestamp {
+                    Text(timestampText(for: calendarTimestamp))
+                        .font(.interCaption2)
+                        .foregroundStyle(AppStyle.secondaryText)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 10, trailing: 16))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                }
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
@@ -67,6 +78,10 @@ struct TodayView: View {
                 }
             }
         }
+    }
+
+    private func timestampText(for date: Date) -> String {
+        "Stand: \(date.formatted(date: .abbreviated, time: .shortened))"
     }
 }
 

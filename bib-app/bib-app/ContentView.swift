@@ -64,6 +64,7 @@ struct ContentView: View {
             WeekScheduleView(events: allEvents, selectedWeekDate: $selectedWeekDate)
         case .today:
             TodayView(
+                calendarTimestamp: latestCalendarTimestamp,
                 currentEvent: currentEvent,
                 nextEvent: nextEvent,
                 laterTodayEvents: laterTodayEvents,
@@ -109,7 +110,7 @@ struct ContentView: View {
             do {
                 try await Shared.item.dataController.loadCalendar()
             } catch {
-                errorMessage = error.localizedDescription
+                errorMessage = "Du scheinst offline zu sein."
             }
         }
     }
@@ -127,6 +128,10 @@ struct ContentView: View {
             .sorted {
                 ($0.start ?? .distantFuture) < ($1.start ?? .distantFuture)
             }
+    }
+
+    private var latestCalendarTimestamp: Date? {
+        calendars.first?.timestamp
     }
 
     private var nextEvent: CalendarEvent? {

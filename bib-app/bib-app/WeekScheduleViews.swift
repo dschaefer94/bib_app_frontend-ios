@@ -12,7 +12,7 @@ enum ScheduleBlock: Int, CaseIterable, Identifiable {
     }
 
     var title: String {
-        "\(startText)-\(endText)"
+        "\(startText)\n- \(endText)"
     }
 
     private var startText: String {
@@ -243,7 +243,7 @@ struct WeekDayHeader: View {
 
     var body: some View {
         VStack(spacing: 2) {
-            Text(day.formatted(.dateTime.weekday(.abbreviated)))
+            Text(weekdayText)
                 .font(.interCaption.weight(.semibold))
                 .lineLimit(1)
 
@@ -252,6 +252,10 @@ struct WeekDayHeader: View {
                 .foregroundStyle(AppStyle.secondaryText)
                 .lineLimit(1)
         }
+    }
+
+    private var weekdayText: String {
+        wochentagKuerzel(for: day)
     }
 }
 
@@ -281,6 +285,7 @@ struct WeekBlockCell: View {
             }
         }
     }
+
 }
 
 struct WeekEventLink: View {
@@ -303,7 +308,7 @@ struct WeekDayColumn: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            Text(day.formatted(.dateTime.weekday(.abbreviated)))
+            Text(wochentagKuerzel(for: day))
                 .font(.interCaption.weight(.semibold))
                 .frame(maxWidth: .infinity)
 
@@ -530,5 +535,27 @@ struct DateNavigationHeader: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Weiter")
         }
+    }
+}
+
+private func wochentagKuerzel(for date: Date) -> String {
+    let weekday = Foundation.Calendar.current.component(.weekday, from: date)
+    switch weekday {
+    case 2:
+        return "Mo"
+    case 3:
+        return "Di"
+    case 4:
+        return "Mi"
+    case 5:
+        return "Do"
+    case 6:
+        return "Fr"
+    case 7:
+        return "Sa"
+    case 1:
+        return "So"
+    default:
+        return date.formatted(.dateTime.weekday(.abbreviated))
     }
 }

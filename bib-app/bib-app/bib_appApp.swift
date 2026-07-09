@@ -6,10 +6,15 @@
 //
 
 import SwiftUI
+import CoreText
 
 @main
 struct bib_appApp: App {
     private let dataController = Shared.item.dataController
+
+    init() {
+        FontRegistrar.registerInter()
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -18,5 +23,15 @@ struct bib_appApp: App {
                 .font(.interBody)
                 .tint(AppStyle.orange)
         }
+    }
+}
+
+private enum FontRegistrar {
+    static func registerInter() {
+        guard let fontURL = Bundle.main.url(forResource: "Inter", withExtension: "ttf") else {
+            return
+        }
+
+        CTFontManagerRegisterFontsForURL(fontURL as CFURL, .process, nil)
     }
 }

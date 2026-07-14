@@ -365,12 +365,7 @@ struct WeekEventTile: View {
                     .fill(event.subjectColor.opacity(0.18))
             )
             .foregroundStyle(AppStyle.primaryText)
-            .overlay {
-                if let stripeColor = event.unreadChangeColor {
-                    StripedOverlay(color: stripeColor)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                }
-            }
+            .eventLabelIndicator(event: event, cornerRadius: 6, badgeSize: 12, badgePadding: 2)
             .overlay {
                 if let borderStyle = event.categoryBorderStyle {
                     RoundedRectangle(cornerRadius: 6)
@@ -431,30 +426,15 @@ struct ScheduleLegendView: View {
 
                 LegendColumn(title: "Label") {
                     LegendItem(title: "Neu") {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(AppStyle.lime.opacity(0.12))
-                            .overlay {
-                                StripedOverlay(color: AppStyle.lime)
-                                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                            }
+                        LabelLegendSymbol(systemImage: "plus", color: AppStyle.lime)
                     }
 
                     LegendItem(title: "Geändert") {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(AppStyle.orange.opacity(0.12))
-                            .overlay {
-                                StripedOverlay(color: AppStyle.orange)
-                                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                            }
+                        LabelLegendSymbol(systemImage: "pencil", color: AppStyle.orange)
                     }
 
                     LegendItem(title: "Gelöscht") {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(AppStyle.magenta.opacity(0.12))
-                            .overlay {
-                                StripedOverlay(color: AppStyle.magenta)
-                                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                            }
+                        LabelLegendSymbol(systemImage: "xmark", color: AppStyle.magenta)
                     }
                 }
             }
@@ -480,6 +460,31 @@ struct LegendColumn<Content: View>: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+}
+
+struct LabelLegendSymbol: View {
+    let systemImage: String
+    let color: Color
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 4)
+                .fill(AppStyle.elevatedSurface)
+
+            Capsule()
+                .fill(color)
+                .frame(width: 4)
+                .padding(.vertical, 3)
+
+            Image(systemName: systemImage)
+                .font(.system(size: 8, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 14, height: 14)
+                .background(Circle().fill(color))
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .padding(.trailing, 4)
+        }
     }
 }
 

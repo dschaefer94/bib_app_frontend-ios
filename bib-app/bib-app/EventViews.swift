@@ -224,6 +224,18 @@ extension CalendarEvent {
         cleanSummary ?? displayCategory ?? label ?? "Termin"
     }
 
+    var weekScheduleTitle: String {
+        guard let firstWord = cleanSummary?.split(whereSeparator: { $0.isWhitespace }).first else {
+            return displayCategory ?? label ?? "Termin"
+        }
+
+        if firstWord.count > 3 {
+            return String(firstWord)
+        }
+
+        return String(firstWord.prefix(3))
+    }
+
     var subjectColor: Color {
         AppStyle.subjectColor(for: cleanSummary ?? category ?? label)
     }
@@ -374,7 +386,16 @@ extension CalendarEvent {
     }
 
     private var cleanSummary: String? {
-        normalizedText(summary)
+        guard var value = normalizedText(summary) else {
+            return nil
+        }
+
+        while value.hasPrefix("*") {
+            value = String(value.dropFirst())
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        return value.isEmpty ? nil : value
     }
 
     private var normalizedCategory: String? {

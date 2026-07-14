@@ -136,7 +136,7 @@ struct ContentView: View {
 
     private var nextEvent: CalendarEvent? {
         let now = Date()
-        return allEvents.first { event in
+        return todaysEvents.first { event in
             guard let start = event.start else {
                 return false
             }
@@ -170,7 +170,7 @@ struct ContentView: View {
 
     private var laterTodayEvents: [CalendarEvent] {
         guard let nextStart = nextEvent?.start else {
-            return todaysEvents
+            return []
         }
 
         return todaysEvents.filter { event in

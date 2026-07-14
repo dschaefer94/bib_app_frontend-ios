@@ -348,9 +348,9 @@ struct WeekEventTile: View {
                 Image(systemName: "rectangle.expand.vertical")
                     .font(.interCaption.weight(.semibold))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .accessibilityLabel(event.previewTitle)
+                    .accessibilityLabel(event.weekScheduleTitle)
             } else {
-                Text(event.previewTitle)
+                Text(event.weekScheduleTitle)
                     .font(.interCaption.weight(.semibold))
                     .lineLimit(2)
                     .minimumScaleFactor(0.75)

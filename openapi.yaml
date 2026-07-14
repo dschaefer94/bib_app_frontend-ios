@@ -1,0 +1,297 @@
+openapi: 3.0.0
+
+info:
+    title: Bib-App Calendar API
+    description: Symfony-konforme REST API für Stundenplan und Terminverwaltung
+    version: 2.0.0
+    contact:
+        name: Daniel Schäfer
+
+servers:
+    - url: http://127.0.0.1:8000
+      description: Symfony Development Server
+    - url: http://127.0.0.1:8000
+      description: Production Server
+
+# Globale Sicherheitseinstellung: Alle Endpunkte erfordern BearerAuth (JWT)
+security:
+    - BearerAuth: []
+
+tags:
+    - name: Calendar
+      description: Stundenplan und Terminverwaltung
+    - name: User Profile
+      description: Verwaltung von Benutzerprofilen
+
+paths:
+    /api/calendar:
+        get:
+            tags:
+                - Calendar
+            summary: Aktuellen Stundenplan abrufen
+            description: |
+                Holt den aktuellen Stundenplan für die Klasse des Benutzers.
+                Die Authentifizierung und Kontextauflösung erfolgt in einer späteren Version.
+                Alle Termine sind mit optionalen Metadaten (Label, Kategorie, Originaltermin) angereichert.
+            operationId: getCalendar
+            responses:
+                '200':
+                    description: Stundenplan erfolgreich abgerufen
+                    content:
+                        application/json:
+                                    schema:
+                                        type: object
+                                        required:
+                                            - timestamp
+                                            - events
+                                        properties:
+                                            timestamp:
+                                                type: string
+                                                format: date-time
+                                                description: Zeitpunkt der Erstellung der Antwort
+                                                example: "2026-05-22T12:00:00+02:00"
+                                            events:
+                                                type: array
+                                                items:
+                                                    $ref: '#/components/schemas/CalendarEvent'
+
+                default:
+                    description: Fachlicher oder technischer Fehler
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/Problem'
+
+    /api/profile/me:
+        get:
+            tags:
+                - User Profile
+            summary: Aktuelles Benutzerprofil abrufen
+            description: Ruft die Profildaten des authentifizierten Benutzers ab.
+            operationId: getUserProfile
+            responses:
+                '200':
+                    description: Benutzerprofil erfolgreich abgerufen
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserProfile'
+                '401':
+                    description: Nicht authentifiziert
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/Problem'
+                default:
+                    description: Fachlicher oder technischer Fehler
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/Problem'
+
+    /api/profile/update-klasse:
+        post:
+            tags:
+                - User Profile
+            summary: Klasse des Benutzers aktualisieren
+            description: Aktualisiert die zugewiesene Klasse für den authentifizierten Benutzer.
+            operationId: updateKlasse
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateKlasseRequest'
+            responses:
+                '200':
+                    description: Klasse erfolgreich aktualisiert
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: "Klasse updated successfully."
+                                    klasse_id:
+                                        type: integer
+                                        example: 1
+                '400':
+                    description: Ungültige Anfrage (z.B. fehlende klassen_id)
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/Problem'
+                '401':
+                    description: Nicht authentifiziert
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/Problem'
+                '404':
+                    description: Klasse nicht gefunden
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/Problem'
+                default:
+                    description: Fachlicher oder technischer Fehler
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/Problem'
+
+components:
+    securitySchemes:
+        BearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+            description: JWT-Authentifizierung mit Bearer Token
+
+    schemas:
+        CalendarEvent:
+            type: object
+            description: Termin des Stundenplans mit optionalen Metadaten
+            required:
+                - id
+                - summary
+                - start
+                - end
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                    example: "550e8400-e29b-41d4-a716-446655440000"
+
+                summary:
+                    type: string
+                    maxLength: 255
+                    example: "Mathematik - Unterricht"
+
+                description:
+                    type: string
+                    nullable: true
+                    example: "Lektion zu Differentialrechnung"
+
+                start:
+                    type: string
+                    format: date-time
+                    example: "2026-05-22T09:00:00+02:00"
+
+                end:
+                    type: string
+                    format: date-time
+                    example: "2026-05-22T10:00:00+02:00"
+
+                location:
+                    type: string
+                    nullable: true
+                    example: "Raum 101"
+
+                lecturer:
+                    type: string
+                    nullable: true
+                    example: "ABC"
+
+                label:
+                    type: string
+                    nullable: true
+                    enum: [neu, gelöscht, geändert]
+
+                category:
+                    type: string
+                    nullable: true
+                    enum: [selbstlernzeit, ferien, klausur, bib-event, eigenes-event]
+
+                originalEvent:
+                    type: object
+                    nullable: true
+                    required: [summary, start, end]
+                    properties:
+                        summary:
+                            type: string
+                        start:
+                            type: string
+                            format: date-time
+                        end:
+                            type: string
+                            format: date-time
+                        location:
+                            type: string
+                            nullable: true
+
+                updatedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    description: Zeitpunkt der letzten backendseitigen Aktualisierung eines geänderten Termins
+
+        Problem:
+            type: object
+            description: RFC-9457-kompatibles Problem-Detail-Objekt
+            properties:
+                type:
+                    type: string
+                    format: uri-reference
+                    default: 'about:blank'
+                    example: '/problems/calendar-not-found'
+                title:
+                    type: string
+                    example: 'Calendar not found'
+                status:
+                    type: integer
+                    format: int32
+                    minimum: 100
+                    maximum: 599
+                detail:
+                    type: string
+                    example: 'No calendar could be resolved for the current user context.'
+                instance:
+                    type: string
+                    format: uri-reference
+                    example: '/api/calendar#missing-context'
+
+        UserProfile:
+            type: object
+            description: Benutzerprofil-Daten
+            properties:
+                identity_id:
+                    type: string
+                    format: uuid
+                    example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+                    description: Die eindeutige ID des Benutzers vom Identity Provider (sub claim).
+                email:
+                    type: string
+                    format: email
+                    example: "user@example.com"
+                is_admin:
+                    type: boolean
+                    example: false
+                roles:
+                    type: array
+                    items:
+                        type: string
+                    example: ["ROLE_USER"]
+                klasse:
+                    $ref: '#/components/schemas/Klasse'
+
+        UpdateKlasseRequest:
+            type: object
+            required:
+                - klassen_id
+            properties:
+                klassen_id:
+                    type: integer
+                    example: 1
+                    description: Die ID der Klasse, die dem Benutzer zugewiesen werden soll.
+
+        Klasse:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    example: 1
+                name:
+                    type: string
+                    example: "INF2023"

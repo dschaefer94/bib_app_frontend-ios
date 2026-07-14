@@ -12,11 +12,13 @@ struct CalendarEventResponse: Decodable, Sendable {
     let end: Date?
     let id: UUID?
     let label: String?
+    let lecturer: String?
     let location: String?
     let originalEvent: OriginalEventResponse?
     let read: Bool?
     let start: Date?
     let summary: String?
+    let updatedAt: Date?
 
     private enum CodingKeys: String, CodingKey {
         case category
@@ -24,6 +26,7 @@ struct CalendarEventResponse: Decodable, Sendable {
         case end
         case id
         case label
+        case lecturer
         case location
         case originalEvent
         case originalEventSnakeCase = "original_event"
@@ -31,6 +34,7 @@ struct CalendarEventResponse: Decodable, Sendable {
         case read
         case start
         case summary
+        case updatedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -40,6 +44,7 @@ struct CalendarEventResponse: Decodable, Sendable {
         end = try container.decodeIfPresent(Date.self, forKey: .end)
         id = try container.decodeIfPresent(UUID.self, forKey: .id)
         label = try container.decodeIfPresent(String.self, forKey: .label)
+        lecturer = try container.decodeIfPresent(String.self, forKey: .lecturer)
         location = try container.decodeIfPresent(String.self, forKey: .location)
         originalEvent = try container.decodeIfPresent(OriginalEventResponse.self, forKey: .originalEvent)
             ?? container.decodeIfPresent(OriginalEventResponse.self, forKey: .originalEventSnakeCase)
@@ -47,6 +52,7 @@ struct CalendarEventResponse: Decodable, Sendable {
         read = try container.decodeIfPresent(Bool.self, forKey: .read)
         start = try container.decodeIfPresent(Date.self, forKey: .start)
         summary = try container.decodeIfPresent(String.self, forKey: .summary)
+        updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt)
     }
 }
 
@@ -92,12 +98,7 @@ final class DataController {
             container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
         }
 
-        container.loadPersistentStores { _, error in
-            if let error {
-                fatalError("Core Data konnte nicht geladen werden: \(error.localizedDescription)")
-            }
-        }
-
+        loadPersistentStores(resetOnFailure: !inMemory)
         container.viewContext.automaticallyMergesChangesFromParent = true
     }
 
@@ -145,10 +146,12 @@ final class DataController {
             event.end = responseEvent.end
             event.id = responseEvent.id ?? UUID()
             event.label = responseEvent.label
+            event.lecturer = responseEvent.lecturer
             event.location = responseEvent.location
             event.read = responseEvent.read ?? responseEvent.labelIsEmpty
             event.start = responseEvent.start
             event.summary = responseEvent.summary
+            event.updatedAt = responseEvent.updatedAt
             event.calendar = calendar
 
             if let responseOriginalEvent = responseEvent.originalEvent {
@@ -184,6 +187,44 @@ final class DataController {
         let calendarRequest: NSFetchRequest<Calendar> = Calendar.fetchRequest()
         let calendars = try viewContext.fetch(calendarRequest)
         calendars.forEach(viewContext.delete)
+    }
+
+    private func loadPersistentStores(resetOnFailure: Bool) {
+        let loadError = performPersistentStoreLoad()
+
+        guard let loadError else {
+            return
+        }
+
+        guard resetOnFailure,
+              let storeDescription = container.persistentStoreDescriptions.first,
+              let storeURL = storeDescription.url else {
+            fatalError("Core Data konnte nicht geladen werden: \(loadError.localizedDescription)")
+        }
+
+        do {
+            try container.persistentStoreCoordinator.destroyPersistentStore(at: storeURL, type: .sqlite)
+        } catch {
+            fatalError("Core Data Store konnte nach Schemaaenderung nicht zurueckgesetzt werden: \(error.localizedDescription)")
+        }
+
+        if let reloadError = performPersistentStoreLoad() {
+            fatalError("Core Data konnte nach Store-Reset nicht geladen werden: \(reloadError.localizedDescription)")
+        }
+    }
+
+    private func performPersistentStoreLoad() -> Error? {
+        let group = DispatchGroup()
+        var loadError: Error?
+
+        group.enter()
+        container.loadPersistentStores { _, error in
+            loadError = error
+            group.leave()
+        }
+        group.wait()
+
+        return loadError
     }
 
     private static func makeDecoder() -> JSONDecoder {

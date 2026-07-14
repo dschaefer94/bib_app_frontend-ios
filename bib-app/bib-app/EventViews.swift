@@ -221,37 +221,19 @@ struct EventRow: View {
 
 extension CalendarEvent {
     var previewTitle: String {
-        if let bibEventTitle {
-            return bibEventTitle
-        }
-
-        if isHolidayEvent,
-           let summary = cleanSummary,
-           !summary.isEmpty {
-            return summary
-        }
-
-        return subjectCode ?? label ?? "Termin"
-    }
-
-    var subjectCode: String? {
-        firstThreeCharacterCode(from: summary)
+        cleanSummary ?? displayCategory ?? label ?? "Termin"
     }
 
     var subjectColor: Color {
-        AppStyle.subjectColor(for: subjectCode)
+        AppStyle.subjectColor(for: cleanSummary ?? category ?? label)
     }
 
     var categoryBorderStyle: (color: Color, dash: [CGFloat])? {
-        if isHolidayEvent {
-            return (AppStyle.lime, [])
-        }
-
-        if isBibEvent {
-            return (AppStyle.yellow, [])
-        }
-
         switch normalizedCategory {
+        case "ferien":
+            return (AppStyle.lime, [])
+        case "bib-event", "bib-events":
+            return (AppStyle.yellow, [])
         case "selbstlernzeit":
             return (AppStyle.blue, [6, 4])
         case "klausur":
@@ -262,44 +244,36 @@ extension CalendarEvent {
     }
 
     var isExam: Bool {
-        category?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased() == "klausur"
+        normalizedCategory == "klausur"
     }
 
     var isBibEvent: Bool {
-        normalizedCategory == "bib-events" || bibEventTitle != nil
+        normalizedCategory == "bib-event" || normalizedCategory == "bib-events"
     }
 
     var isHolidayEvent: Bool {
-        normalizedCategory == "ferien" || normalizedEventText.contains("ferien") || holidayTitleTokens.contains("bruckentag")
-    }
-
-    var isRepresentativeHolidayEvent: Bool {
-        normalizedCategory == "ferien" || holidayTitleTokens.contains("ferien") || holidayTitleTokens.contains("bruckentag")
+        normalizedCategory == "ferien"
     }
 
     var displayCategory: String? {
-        if isBibEvent {
-            return "bib-Event"
-        }
-
-        if isHolidayEvent {
-            return "Ferien"
-        }
-
         switch normalizedCategory {
+        case "bib-event", "bib-events":
+            return "bib-Event"
+        case "ferien":
+            return "Ferien"
         case "selbstlernzeit":
             return "Selbstlernzeit"
         case "klausur":
             return "Klausur"
+        case "eigenes-event":
+            return "Eigenes Event"
         default:
             return category
         }
     }
 
     var formattedLocation: String? {
-        formattedLocationText(from: location)
+        normalizedText(location)
     }
 
     var isVisibleInSchedule: Bool {
@@ -396,76 +370,18 @@ extension CalendarEvent {
     }
 
     var lecturerText: String? {
-        guard let summary else {
-            return nil
-        }
-
-        let tokens = summary
-            .uppercased()
-            .split(separator: " ")
-            .map { token in
-                token.trimmingCharacters(in: CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-")).inverted)
-            }
-            .filter { !$0.isEmpty }
-
-        guard let subjectIndex = tokens.firstIndex(where: { firstThreeCharacterCode(from: $0) == subjectCode }),
-              tokens.indices.contains(subjectIndex + 1) else {
-            return nil
-        }
-
-        let lecturer = tokens[subjectIndex + 1]
-
-        guard !lecturer.hasPrefix("P-"),
-              lecturer.count == 3,
-              lecturer.allSatisfy({ $0.isLetter }) else {
-            return nil
-        }
-
-        return lecturer
+        normalizedText(lecturer)
     }
 
     private var cleanSummary: String? {
-        guard let summary = summary?
-            .trimmingCharacters(in: .whitespacesAndNewlines),
-              !summary.isEmpty else {
-            return nil
-        }
-
-        return summary.hasPrefix("* ") ? String(summary.dropFirst(2)) : summary
-    }
-
-    private var normalizedEventText: String {
-        [cleanSummary, label]
-            .compactMap { $0 }
-            .joined(separator: " ")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
-            .folding(options: .diacriticInsensitive, locale: .current)
-    }
-
-    private var holidayTitleTokens: [String] {
-        normalizedEventText
-            .split { !$0.isLetter && !$0.isNumber }
-            .map(String.init)
+        normalizedText(summary)
     }
 
     private var normalizedCategory: String? {
         category?
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
-    }
-
-    private var bibEventTitle: String? {
-        if normalizedEventText.contains("sommerfest") {
-            return "Sommerfest"
-        }
-
-        if normalizedCategory == "bib-events",
-           let firstWord = cleanSummary?.split(whereSeparator: { $0.isWhitespace }).first {
-            return String(firstWord)
-        }
-
-        return nil
+            .folding(options: .diacriticInsensitive, locale: .current)
     }
 
     private var normalizedLabel: String? {
@@ -489,30 +405,11 @@ extension CalendarEvent {
         }
     }
 
-    fileprivate func firstThreeCharacterCode(from value: String?) -> String? {
-        guard let value else {
-            return nil
-        }
-
-        let cleanedValue = value.hasPrefix("* ") ? String(value.dropFirst(2)) : value
-        let code = String(
-            cleanedValue
-                .uppercased()
-                .filter { $0.isLetter || $0.isNumber }
-                .prefix(3)
-        )
-
-        guard code.count == 3 else {
-            return nil
-        }
-
-        return code
-    }
 }
 
 extension OriginalEvent {
     var formattedLocation: String? {
-        formattedLocationText(from: location)
+        normalizedText(location)
     }
 
     var changeTimeText: String? {
@@ -546,32 +443,6 @@ private func appendChange(
             currentValue: currentValue
         )
     )
-}
-
-private func formattedLocationText(from value: String?) -> String? {
-    guard let location = value?.trimmingCharacters(in: .whitespacesAndNewlines),
-          !location.isEmpty else {
-        return nil
-    }
-
-    let uppercasedLocation = location.uppercased()
-    let characters = Array(uppercasedLocation)
-
-    if characters.count >= 2,
-       characters[characters.count - 2] == ".",
-       characters[characters.count - 1].isLetter {
-        return "\(characters[characters.count - 1])-Pool"
-    }
-
-    let digits = uppercasedLocation.filter { $0.isNumber }
-    if digits.count >= 3 {
-        let lastThreeDigits = String(digits.suffix(3))
-        if lastThreeDigits.first == "2" {
-            return "Raum \(lastThreeDigits)"
-        }
-    }
-
-    return location
 }
 
 private func formattedTimeText(start: Date?, end: Date?, showsDate: Bool) -> String? {
@@ -639,6 +510,7 @@ struct EventDetailView: View {
                 DetailRow(title: "Kategorie", value: event.displayCategory)
                 DetailRow(title: "Dozent", value: event.lecturerText)
                 DetailRow(title: "Label", value: event.label)
+                DetailRow(title: "Aktualisiert", value: detailUpdatedAtText)
             }
 
             if let descriptions = nonEmpty(event.descriptions) {
@@ -688,6 +560,14 @@ struct EventDetailView: View {
         ) ?? event.formattedLocation
     }
 
+    private var detailUpdatedAtText: String? {
+        guard let updatedAt = event.updatedAt else {
+            return nil
+        }
+
+        return updatedAt.formatted(date: .abbreviated, time: .shortened)
+    }
+
     private var currentDateText: String? {
         formattedDateText(start: event.start, end: event.end)
     }
@@ -704,6 +584,15 @@ struct EventDetailView: View {
 
         return value
     }
+}
+
+private func normalizedText(_ value: String?) -> String? {
+    guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines),
+          !value.isEmpty else {
+        return nil
+    }
+
+    return value
 }
 
 struct DetailRow: View {

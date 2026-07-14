@@ -46,7 +46,7 @@ enum ScheduleBlock: Int, CaseIterable, Identifiable {
     }
 
     func contains(_ event: CalendarEvent) -> Bool {
-        if event.isRepresentativeHolidayEvent {
+        if event.isHolidayEvent {
             return self == .first
         }
 

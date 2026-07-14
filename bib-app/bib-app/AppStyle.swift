@@ -22,12 +22,12 @@ enum AppStyle {
 
     static let subjectPalette = [orange, teal, lime, magenta, blue]
 
-    static func subjectColor(for code: String?) -> Color {
-        guard let code else {
+    static func subjectColor(for value: String?) -> Color {
+        guard let value else {
             return teal
         }
 
-        let total = code.unicodeScalars.reduce(0) { partialResult, scalar in
+        let total = value.unicodeScalars.reduce(0) { partialResult, scalar in
             partialResult + Int(scalar.value)
         }
 

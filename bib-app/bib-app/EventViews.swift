@@ -1,5 +1,5 @@
 import SwiftUI
-
+// wenn man auf einen Termin klickt, Detailansicht
 struct EventChangeDetail: Identifiable {
     let title: String
     let systemImage: String
@@ -19,13 +19,7 @@ struct ChangeEventNavigationRow: View {
             EventDetailView(event: event)
         } label: {
             VStack(alignment: .leading, spacing: 10) {
-                EventRow(
-                    event: event,
-                    title: event.weekScheduleTitle,
-                    hiddenDetailTitles: Set(event.changeDetails.map(\.title)),
-                    showsDate: true,
-                    showsTodayDetails: true
-                )
+                EventRow(event: event, showsDate: true, showsTodayDetails: true)
 
                 if event.isChangedEvent && event.changeDetails.isEmpty {
                     Text("Kein vorheriger Stand gespeichert")
@@ -41,13 +35,17 @@ struct ChangeEventNavigationRow: View {
                 }
             }
             .padding(12)
-            .padding(.trailing, event.unreadLabelStyle == nil ? 0 : 22)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 8)
                     .fill(event.subjectColor.opacity(0.16))
             )
-            .eventLabelIndicator(event: event, cornerRadius: 8)
+            .overlay {
+                if let stripeColor = event.unreadChangeColor {
+                    StripedOverlay(color: stripeColor)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+            }
             .overlay {
                 if let borderStyle = event.categoryBorderStyle {
                     RoundedRectangle(cornerRadius: 8)
@@ -62,6 +60,8 @@ struct ChangeEventNavigationRow: View {
         .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
         .listRowBackground(Color.clear)
         .listRowSeparator(.hidden)
+        // swipeActions: Ermöglicht Interaktionen durch Wischen über einen Listeneintrag 
+        // (ähnlich wie onDelete für das Löschen genutzt wird).
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             if event.canBeMarkedAsRead {
                 Button {
@@ -114,13 +114,17 @@ struct EventNavigationRow: View {
         } label: {
             EventRow(event: event, showsDate: showsDate, showsTodayDetails: showsTodayDetails)
             .padding(12)
-            .padding(.trailing, event.unreadLabelStyle == nil ? 0 : 22)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 8)
                     .fill(event.subjectColor.opacity(0.16))
             )
-            .eventLabelIndicator(event: event, cornerRadius: 8)
+            .overlay {
+                if let stripeColor = event.unreadChangeColor {
+                    StripedOverlay(color: stripeColor)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+            }
             .overlay {
                 if let borderStyle = event.categoryBorderStyle {
                     RoundedRectangle(cornerRadius: 8)
@@ -155,98 +159,48 @@ struct EventNavigationRow: View {
     }
 }
 
-struct EventLabelBadge: View {
-    let title: String
-    let systemImage: String
+struct StripedOverlay: View {
     let color: Color
-    var size: CGFloat = 18
-    var symbolSize: CGFloat = 11
 
     var body: some View {
-        Label(title, systemImage: systemImage)
-            .font(.system(size: symbolSize, weight: .bold))
-            .labelStyle(.iconOnly)
-            .foregroundStyle(.white)
-            .frame(width: size, height: size)
-            .background(Circle().fill(color))
-            .accessibilityLabel(title)
-    }
-}
+        // GeometryReader: zum dynamischen Anpassen desObjekts auf dem Screen
+        GeometryReader { geometry in
+            Path { path in
+                let spacing: CGFloat = 12
+                let size = geometry.size
+                var x = -size.height
 
-struct EventLabelIndicator: ViewModifier {
-    let event: CalendarEvent
-    let cornerRadius: CGFloat
-    let showsBadge: Bool
-    let badgeSize: CGFloat
-    let badgePadding: CGFloat
-
-    func body(content: Content) -> some View {
-        content
-            .overlay(alignment: .leading) {
-                if let labelStyle = event.unreadLabelStyle {
-                    Capsule()
-                        .fill(labelStyle.color)
-                        .frame(width: 5)
-                        .padding(.vertical, 6)
-                        .allowsHitTesting(false)
+                while x < size.width {
+                    path.move(to: CGPoint(x: x, y: size.height))
+                    path.addLine(to: CGPoint(x: x + size.height, y: 0))
+                    x += spacing
                 }
             }
-            .overlay(alignment: .topTrailing) {
-                if showsBadge, let labelStyle = event.unreadLabelStyle {
-                    EventLabelBadge(
-                        title: labelStyle.title,
-                        systemImage: labelStyle.systemImage,
-                        color: labelStyle.color,
-                        size: badgeSize,
-                        symbolSize: max(7, badgeSize * 0.58)
-                    )
-                    .padding(badgePadding)
-                }
-            }
-    }
-}
-
-extension View {
-    func eventLabelIndicator(
-        event: CalendarEvent,
-        cornerRadius: CGFloat,
-        showsBadge: Bool = true,
-        badgeSize: CGFloat = 18,
-        badgePadding: CGFloat = 5
-    ) -> some View {
-        modifier(
-            EventLabelIndicator(
-                event: event,
-                cornerRadius: cornerRadius,
-                showsBadge: showsBadge,
-                badgeSize: badgeSize,
-                badgePadding: badgePadding
-            )
-        )
+            .stroke(color.opacity(0.45), lineWidth: 4)
+        }
+        .allowsHitTesting(false)
     }
 }
 
 struct EventRow: View {
     let event: CalendarEvent
-    var title: String?
-    var hiddenDetailTitles: Set<String> = []
     var showsDate = false
     var showsTodayDetails = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title ?? event.previewTitle)
+            Text(event.previewTitle)
                 .font(.interHeadline)
                 .foregroundStyle(AppStyle.primaryText)
 
-            if showsDate, !hiddenDetailTitles.contains("Datum"), let start = event.start {
+            if showsDate, let start = event.start {
                 Label(start.formatted(date: .abbreviated, time: .omitted), systemImage: "calendar")
                     .font(.interSubheadline)
                     .foregroundStyle(AppStyle.secondaryText)
             }
 
             if showsTodayDetails {
-                if !hiddenDetailTitles.contains("Zeit"), let timeText = event.timeText {
+                if let timeText = event.timeText {
                     Label(timeText, systemImage: "clock")
                         .font(.interSubheadline)
                         .foregroundStyle(AppStyle.secondaryText)
@@ -259,7 +213,7 @@ struct EventRow: View {
                 }
             }
 
-            if !hiddenDetailTitles.contains("Raum"), let location = event.formattedLocation {
+            if let location = event.formattedLocation {
                 Label(location, systemImage: "mappin")
                     .font(.interSubheadline)
                     .foregroundStyle(AppStyle.secondaryText)
@@ -267,22 +221,10 @@ struct EventRow: View {
         }
     }
 }
-
+// fallback, falls Parameter nicht durchkommen
 extension CalendarEvent {
     var previewTitle: String {
         cleanSummary ?? displayCategory ?? label ?? "Termin"
-    }
-
-    var weekScheduleTitle: String {
-        guard let firstWord = cleanSummary?.split(whereSeparator: { $0.isWhitespace }).first else {
-            return displayCategory ?? label ?? "Termin"
-        }
-
-        if firstWord.count > 3 {
-            return String(firstWord)
-        }
-
-        return String(firstWord.prefix(3))
     }
 
     var subjectColor: Color {
@@ -293,6 +235,7 @@ extension CalendarEvent {
         switch normalizedCategory {
         case "ferien":
             return (AppStyle.lime, [])
+                // fallback, falls das Backend wieder Blödsinn macht
         case "bib-event", "bib-events":
             return (AppStyle.yellow, [])
         case "selbstlernzeit":
@@ -353,18 +296,18 @@ extension CalendarEvent {
         normalizedLabel == "geaendert"
     }
 
-    var unreadLabelStyle: (title: String, systemImage: String, color: Color)? {
+    var unreadChangeColor: Color? {
         guard !read else {
             return nil
         }
 
         switch normalizedLabel {
         case "neu":
-            return ("Neu", "plus", AppStyle.lime)
+            return AppStyle.lime
         case "geaendert":
-            return ("Geändert", "pencil", AppStyle.orange)
+            return AppStyle.orange
         case "geloescht":
-            return ("Gelöscht", "xmark", AppStyle.magenta)
+            return AppStyle.magenta
         default:
             return nil
         }
@@ -435,16 +378,7 @@ extension CalendarEvent {
     }
 
     private var cleanSummary: String? {
-        guard var value = normalizedText(summary) else {
-            return nil
-        }
-
-        while value.hasPrefix("*") {
-            value = String(value.dropFirst())
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-
-        return value.isEmpty ? nil : value
+        normalizedText(summary)
     }
 
     private var normalizedCategory: String? {
@@ -462,7 +396,7 @@ extension CalendarEvent {
               !label.isEmpty else {
             return nil
         }
-
+        // auch hier ein fallback wegen des Backends
         switch label {
         case "neu":
             return "neu"

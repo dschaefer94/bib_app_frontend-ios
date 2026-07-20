@@ -1,5 +1,5 @@
 import SwiftUI
-
+// Startscreen für kommende, jetzige, kommende Termine
 struct TodayView: View {
     let calendarTimestamp: Date?
     let currentEvent: CalendarEvent?
@@ -23,7 +23,7 @@ struct TodayView: View {
                     if let event = currentEvent {
                         EventNavigationRow(event: event, showsTodayDetails: true, addsVerticalSpacing: true)
                     } else {
-                        Text("Kein aktueller Kurs gespeichert")
+                        Text("noch nix")
                             .foregroundStyle(AppStyle.secondaryText)
                     }
                 }
@@ -32,14 +32,14 @@ struct TodayView: View {
                     if let event = nextEvent {
                         EventNavigationRow(event: event, showsTodayDetails: true, addsVerticalSpacing: true)
                     } else {
-                        Text("Kein kommender Kurs gespeichert")
+                        Text("Das war's für heute.")
                             .foregroundStyle(AppStyle.secondaryText)
                     }
                 }
 
                 Section("Kurse danach") {
                     if laterTodayEvents.isEmpty {
-                        Text("Keine weiteren Kurse für heute gespeichert")
+                        Text("Danach kommt nix.")
                             .foregroundStyle(AppStyle.secondaryText)
                     } else {
                         ForEach(laterTodayEvents, id: \.objectID) { event in
@@ -64,6 +64,7 @@ struct TodayView: View {
             .font(.interBody)
             .navigationTitle("Kalender")
             .toolbar {
+                // ToolbarItem: Platziert ein Element in der Navigationsleiste oder einer Toolbar.
                 ToolbarItem(placement: .topBarTrailing) {
                     if isLoading {
                         ProgressView()
@@ -73,6 +74,7 @@ struct TodayView: View {
                         } label: {
                             Image(systemName: "arrow.clockwise")
                         }
+                        // accessibilityLabel: Beschreibt das Element für assistive Technologien wie VoiceOver.
                         .accessibilityLabel("Kalender aktualisieren")
                     }
                 }
@@ -93,7 +95,7 @@ struct ExamsView: View {
             List {
                 Section("Kommende Klausuren") {
                     if events.isEmpty {
-                        Text("Keine kommenden Klausuren gespeichert")
+                        Text("Es stehen keine Klausuren an.")
                             .foregroundStyle(AppStyle.secondaryText)
                     } else {
                         ForEach(events, id: \.objectID) { event in
@@ -119,7 +121,7 @@ struct ChangesView: View {
             List {
                 Section("Änderungen") {
                     if events.isEmpty {
-                        Text("Keine Änderungen gespeichert")
+                        Text("Es bleibt alles so wie es hier ist.")
                             .foregroundStyle(AppStyle.secondaryText)
                     } else {
                         ForEach(events, id: \.objectID) { event in

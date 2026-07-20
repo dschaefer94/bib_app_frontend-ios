@@ -1,18 +1,20 @@
 import SwiftUI
-
+// Platzhalter, hier kann man einen Identity-Provider verbinden, z.B. Cognito
+// gerade aber noch inaktiv, weil Cognito nicht wie geplant funktionieren wollte.
+// Anbindung kann aus der aws-Doku gecopy-pastet werden und mit Issuer-URI versehen werden.
+// Login-View ebenso
 struct ProfileView: View {
-    @State private var firstName = "Max"
-    @State private var lastName = "Mustermann"
-    @State private var selectedClass = "Q1"
+    @State private var firstName = "Daniel"
+    @State private var lastName = "Schäfer"
+    @State private var selectedClass = "PBD2H24A"
 
     private let availableClasses = [
-        "EF",
-        "Q1",
-        "Q2",
-        "11A",
-        "11B",
-        "12A",
-        "12B"
+        "PBD2H24A",
+        "PBS2H24A",
+        "PBG2H24A",
+        "PBM2H24C",
+        "PBM2H24D",
+        "DOZREB"
     ]
 
     var body: some View {
@@ -70,10 +72,7 @@ struct ProfileView: View {
                 }
 
                 Section("Konto") {
-                    Label("AWS Cognito wird später angebunden", systemImage: "cloud")
-                        .foregroundStyle(AppStyle.secondaryText)
-
-                    Label("Datenquelle: ID-Token", systemImage: "key")
+                    Label("AWS Cognito kommt noch", systemImage: "cloud")
                         .foregroundStyle(AppStyle.secondaryText)
                 }
             }

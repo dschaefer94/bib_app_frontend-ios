@@ -1,5 +1,9 @@
 <?php
-
+// dieses Skript auf Plesk tut so, als wäre es ein eingelogter User
+// verfügabr auf https://testapi.pbd2h24asc.web.bib.de
+// der D-Klasse mit demonstrativ veränderten Terminen
+// die Microservicearchitektur (symfony-Backend, Cognito-Auth, Postgres-DB auf aws) wird in Kürze deployet, das Projekt ist fertig.
+// siehe https://github.com/dschaefer94/bib_app_backend-timetable/tree/dev
 declare(strict_types=1);
 
 $calendarPath = __DIR__ . DIRECTORY_SEPARATOR . 'test.ics';
@@ -177,6 +181,15 @@ function deriveLocation(string $summary, ?string $fallbackLocation): ?string
     $normalizedSummary = ltrim(trim($summary), '* ');
     $tokens = preg_split('/\s+/', $normalizedSummary) ?: [];
     $lastToken = $tokens === [] ? null : end($tokens);
+    $normalizedFallbackLocation = normalizeNullableText($fallbackLocation);
+
+    if ($normalizedFallbackLocation !== null && isImsPlatz($normalizedFallbackLocation)) {
+        return 'Online';
+    }
+
+    if (is_string($lastToken) && isImsPlatz($lastToken)) {
+        return 'Online';
+    }
 
     if (is_string($lastToken) && str_starts_with(strtoupper($lastToken), 'P-')) {
         if (preg_match('/^P-(2\d{2})$/i', $lastToken, $roomMatch) === 1) {
@@ -190,16 +203,35 @@ function deriveLocation(string $summary, ?string $fallbackLocation): ?string
         }
     }
 
-    return $fallbackLocation;
+    return $normalizedFallbackLocation;
 }
 
 function deriveCategory(string $summary, ?string $description, ?string $lecturer): ?string
 {
     $normalizedSummary = mb_strtolower($summary, 'UTF-8');
     $normalizedDescription = $description !== null ? mb_strtolower($description, 'UTF-8') : null;
+    $leftTrimmedSummary = ltrim($summary);
+    $trimmedSummary = ltrim($summary, "* \t\n\r\0\x0B");
 
-    if (str_contains($normalizedSummary, 'sommerfest')) {
+    if (strtoupper(substr($trimmedSummary, 0, 3)) === 'PPR') {
+        return 'klausur';
+    }
+
+    if (
+        (str_contains($normalizedSummary, 'schöne') || str_contains($normalizedSummary, 'schoene'))
+        && str_contains($normalizedSummary, 'ferien')
+    ) {
+        return 'selbstlernzeit';
+    }
+
+    if (str_contains($normalizedSummary, 'sommerfest') || str_contains($normalizedSummary, 'recruitingday')) {
         return 'bib-event';
+    }
+
+    foreach (nrwHolidayKeywords() as $holidayKeyword) {
+        if (str_contains($normalizedSummary, $holidayKeyword)) {
+            return 'ferien';
+        }
     }
 
     if (str_contains($normalizedSummary, 'ferien') || str_contains($normalizedSummary, 'brückentag') || str_contains($normalizedSummary, 'brueckentag')) {
@@ -210,7 +242,7 @@ function deriveCategory(string $summary, ?string $description, ?string $lecturer
         return 'ferien';
     }
 
-    if (str_starts_with(ltrim($summary), '*')) {
+    if (str_starts_with($leftTrimmedSummary, '*')) {
         return 'klausur';
     }
 
@@ -286,8 +318,8 @@ function buildApiEvents(array $events, DateTimeImmutable $targetWeekStart): arra
         $apiEvents[] = toApiEvent($deletedEvent);
     }
 
-    $newStart = $targetWeekStart->modify('+3 days')->setTime(11, 30);
-    $newEnd = $targetWeekStart->modify('+3 days')->setTime(13, 0);
+    $newStart = $targetWeekStart->modify('+3 days')->setTime(13, 45);
+    $newEnd = $targetWeekStart->modify('+3 days')->setTime(15, 15);
     $newSummary = 'OOP BCH P-225';
     $newLecturer = deriveLecturer($newSummary);
     $apiEvents[] = toApiEvent(
@@ -356,6 +388,29 @@ function formatDate(?DateTimeImmutable $date): ?string
 function nowIso(): string
 {
     return (new DateTimeImmutable('now'))->format(DateTimeInterface::ATOM);
+}
+
+function isImsPlatz(string $value): bool
+{
+    return str_contains(mb_strtolower($value, 'UTF-8'), 'ims.platz');
+}
+
+function nrwHolidayKeywords(): array
+{
+    return [
+        'neujahr',
+        'karfreitag',
+        'ostermontag',
+        'tag der arbeit',
+        '1. mai',
+        'christi himmelfahrt',
+        'pfingstmontag',
+        'fronleichnam',
+        'tag der deutschen einheit',
+        'allerheiligen',
+        '1. weihnachtstag',
+        '2. weihnachtstag',
+    ];
 }
 
 function uuidFromString(string $value): string

@@ -1,5 +1,7 @@
 import SwiftUI
-
+// wichtigste View: Wochenübersicht der Termine, bib-konform
+// letztendlich ist das Grid nichts anderes als verschachtelte Listen
+// Termine werden farblich und rahmentechnisch entsprechend ihrer Art markiert
 enum ScheduleBlock: Int, CaseIterable, Identifiable {
     case first = 0
     case second = 1
@@ -44,7 +46,7 @@ enum ScheduleBlock: Int, CaseIterable, Identifiable {
             return "17:00"
         }
     }
-
+// Ferien sollen nur den ersten Block repräsentativ markieren
     func contains(_ event: CalendarEvent) -> Bool {
         if event.isHolidayEvent {
             return self == .first
@@ -178,7 +180,7 @@ struct WeekScheduleView: View {
             return start < dayInterval.end && end > dayInterval.start
         }
     }
-
+// sieht mit "by"-Aufruf hübscher aus
     private func moveWeek(by value: Int) {
         selectedWeekDate = Foundation.Calendar.current.date(byAdding: .weekOfYear, value: value, to: selectedWeekDate) ?? selectedWeekDate
     }
@@ -542,7 +544,8 @@ struct DateNavigationHeader: View {
         }
     }
 }
-
+// falls auf einmal Sonntagstermine relevant sind als Platzhalter
+// vllt. später enablebar
 private func wochentagKuerzel(for date: Date) -> String {
     let weekday = Foundation.Calendar.current.component(.weekday, from: date)
     switch weekday {

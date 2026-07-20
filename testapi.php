@@ -1,5 +1,6 @@
 <?php
 // dieses Skript auf Plesk tut so, als wäre es ein eingelogter User
+// verfügabr auf https://testapi.pbd2h24asc.web.bib.de
 // der D-Klasse mit demonstrativ veränderten Terminen
 // die Microservicearchitektur (symfony-Backend, Cognito-Auth, Postgres-DB auf aws) wird in Kürze deployet, das Projekt ist fertig.
 // siehe https://github.com/dschaefer94/bib_app_backend-timetable/tree/dev

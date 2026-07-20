@@ -1,5 +1,5 @@
 import SwiftUI
-
+// wenn man auf einen Termin klickt, Detailansicht
 struct EventChangeDetail: Identifiable {
     let title: String
     let systemImage: String
@@ -60,6 +60,8 @@ struct ChangeEventNavigationRow: View {
         .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
         .listRowBackground(Color.clear)
         .listRowSeparator(.hidden)
+        // swipeActions: Ermöglicht Interaktionen durch Wischen über einen Listeneintrag 
+        // (ähnlich wie onDelete für das Löschen genutzt wird).
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             if event.canBeMarkedAsRead {
                 Button {
@@ -161,6 +163,7 @@ struct StripedOverlay: View {
     let color: Color
 
     var body: some View {
+        // GeometryReader: zum dynamischen Anpassen desObjekts auf dem Screen
         GeometryReader { geometry in
             Path { path in
                 let spacing: CGFloat = 12
@@ -218,7 +221,7 @@ struct EventRow: View {
         }
     }
 }
-
+// fallback, falls Parameter nicht durchkommen
 extension CalendarEvent {
     var previewTitle: String {
         cleanSummary ?? displayCategory ?? label ?? "Termin"
@@ -232,6 +235,7 @@ extension CalendarEvent {
         switch normalizedCategory {
         case "ferien":
             return (AppStyle.lime, [])
+                // fallback, falls das Backend wieder Blödsinn macht
         case "bib-event", "bib-events":
             return (AppStyle.yellow, [])
         case "selbstlernzeit":
@@ -392,7 +396,7 @@ extension CalendarEvent {
               !label.isEmpty else {
             return nil
         }
-
+        // auch hier ein fallback wegen des Backends
         switch label {
         case "neu":
             return "neu"

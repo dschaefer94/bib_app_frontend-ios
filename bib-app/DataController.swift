@@ -1,6 +1,7 @@
 import CoreData
 import Foundation
 
+// Decodable: Protokoll für Klassen/Strukturen, die aus JSON-Daten erzeugt werden können.
 struct CalendarResponse: Decodable, Sendable {
     let timestamp: Date
     let events: [CalendarEventResponse]
@@ -81,12 +82,15 @@ enum CalendarImportError: LocalizedError {
     }
 }
 
+// @MainActor: Stellt sicher, dass alle Operationen dieser Klasse auf dem Main-Thread (UI-Thread) ausgeführt werden.
 @MainActor
 final class DataController {
     private static let calendarURL = URL(string: "https://testapi.pbd2h24asc.web.bib.de")!
 
+    // NSPersistentContainer: Die zentrale Core Data Instanz, die das Datenmodell und den Speicherort verwaltet.
     let container: NSPersistentContainer
 
+    // NSManagedObjectContext: Der "Arbeitsbereich" für Core Data Objekte (Laden, Bearbeiten, Löschen).
     var viewContext: NSManagedObjectContext {
         container.viewContext
     }
@@ -102,6 +106,8 @@ final class DataController {
         container.viewContext.automaticallyMergesChangesFromParent = true
     }
 
+    // @discardableResult: Erlaubt den Aufruf der Methode, ohne dass der Rückgabewert zwingend verwendet werden muss.
+    // async throws: Die Methode läuft asynchron ab und kann bei Fehlern eine Exception werfen.
     @discardableResult
     func loadCalendar() async throws -> Calendar {
         let (data, response) = try await URLSession.shared.data(from: Self.calendarURL)
@@ -142,6 +148,8 @@ final class DataController {
         for responseEvent in responseCalendar.events {
             let event = CalendarEvent(context: viewContext)
             event.category = responseEvent.category
+            // Plural, weil description von swift irgendwie schon belegt ist
+            // kommt aus der API im Singular
             event.descriptions = responseEvent.description
             event.end = responseEvent.end
             event.id = responseEvent.id ?? UUID()

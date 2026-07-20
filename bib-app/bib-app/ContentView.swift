@@ -1,12 +1,14 @@
 
 import CoreData
 import SwiftUI
-
+// hier ist die Logik drin, die in mehreren anderen Views benötigt wird
 struct ContentView: View {
+    // @FetchRequest: wie Binding für CoreData
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Calendar.timestamp, ascending: false)],
         animation: .default
     )
+    // FetchedResults: wie PDO fetch in php
     private var calendars: FetchedResults<Calendar>
 
     @State private var isLoading = false
@@ -18,7 +20,7 @@ struct ContentView: View {
         VStack(spacing: 0) {
             selectedView
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-
+            // wie gap
             Divider()
                 .overlay(AppStyle.teal.opacity(0.22))
 
@@ -57,6 +59,7 @@ struct ContentView: View {
         .background(AppStyle.background)
     }
 
+    // @ViewBuilder: Erlaubt es, eine View-Struktur mit logischen Bedingungen (switch/if) zu definieren.
     @ViewBuilder
     private var selectedView: some View {
         switch selectedTab {
@@ -102,6 +105,8 @@ struct ContentView: View {
         isLoading = true
         errorMessage = nil
 
+        // Task: Startet eine asynchrone Operation wie go func
+        // @MainActor in: UI im MainThread wie in android, sonst stürzt's ab
         Task { @MainActor in
             defer {
                 isLoading = false
@@ -137,6 +142,7 @@ struct ContentView: View {
     private var nextEvent: CalendarEvent? {
         let now = Date()
         return allEvents.first { event in
+            // guard let, weil optional
             guard let start = event.start else {
                 return false
             }
@@ -201,7 +207,8 @@ struct ContentView: View {
     }
 }
 
-
+// etwas veränderte Leiste i.Vgl. zur Spezifikation
+// enum für mögliche Mehrsprachigkeit
 enum CalendarTab {
     case week
     case today
@@ -223,7 +230,7 @@ enum CalendarTab {
             return "Profil"
         }
     }
-
+// passende Symbole
     var systemImage: String {
         switch self {
         case .week:

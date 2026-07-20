@@ -1,5 +1,7 @@
 import SwiftUI
 
+// AppStyle: sowas wie CSS
+// https://www.swift.org/documentation/docc/customizing-the-appearance-of-your-documentation-pages
 enum AppStyle {
     static let orange = Color(hex: 0xff7700)
     static let teal = Color(hex: 0x009393)

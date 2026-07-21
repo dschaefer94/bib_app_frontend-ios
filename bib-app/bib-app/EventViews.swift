@@ -1,5 +1,6 @@
 import SwiftUI
 // wenn man auf einen Termin klickt, Detailansicht
+// vor allem Anzeigelogik bei Änderungen
 struct EventChangeDetail: Identifiable {
     let title: String
     let systemImage: String
@@ -182,6 +183,74 @@ struct StripedOverlay: View {
     }
 }
 
+struct EventLabelBadge: View {
+    let title: String
+    let systemImage: String
+    let color: Color
+    var size: CGFloat = 18
+    var symbolSize: CGFloat = 11
+
+    var body: some View {
+        Label(title, systemImage: systemImage)
+            .font(.system(size: symbolSize, weight: .bold))
+            .labelStyle(.iconOnly)
+            .foregroundStyle(.white)
+            .frame(width: size, height: size)
+            .background(Circle().fill(color))
+            .accessibilityLabel(title)
+    }
+}
+
+struct EventLabelIndicator: ViewModifier {
+    let event: CalendarEvent
+    let cornerRadius: CGFloat
+    let badgeSize: CGFloat
+    let badgePadding: CGFloat
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(alignment: .leading) {
+                if let labelStyle = event.unreadLabelStyle {
+                    Capsule()
+                        .fill(labelStyle.color)
+                        .frame(width: 5)
+                        .padding(.vertical, 6)
+                        .allowsHitTesting(false)
+                }
+            }
+            .overlay(alignment: .topTrailing) {
+                if let labelStyle = event.unreadLabelStyle {
+                    EventLabelBadge(
+                        title: labelStyle.title,
+                        systemImage: labelStyle.systemImage,
+                        color: labelStyle.color,
+                        size: badgeSize,
+                        symbolSize: max(7, badgeSize * 0.58)
+                    )
+                    .padding(badgePadding)
+                }
+            }
+    }
+}
+
+extension View {
+    func eventLabelIndicator(
+        event: CalendarEvent,
+        cornerRadius: CGFloat,
+        badgeSize: CGFloat = 18,
+        badgePadding: CGFloat = 5
+    ) -> some View {
+        modifier(
+            EventLabelIndicator(
+                event: event,
+                cornerRadius: cornerRadius,
+                badgeSize: badgeSize,
+                badgePadding: badgePadding
+            )
+        )
+    }
+}
+
 struct EventRow: View {
     let event: CalendarEvent
     var showsDate = false
@@ -225,6 +294,18 @@ struct EventRow: View {
 extension CalendarEvent {
     var previewTitle: String {
         cleanSummary ?? displayCategory ?? label ?? "Termin"
+    }
+
+    var weekScheduleTitle: String {
+        guard let firstWord = cleanSummary?.split(whereSeparator: { $0.isWhitespace }).first else {
+            return displayCategory ?? label ?? "Termin"
+        }
+
+        if firstWord.count > 3 {
+            return String(firstWord)
+        }
+
+        return String(firstWord.prefix(3))
     }
 
     var subjectColor: Color {
@@ -279,8 +360,10 @@ extension CalendarEvent {
     var formattedLocation: String? {
         normalizedText(location)
     }
-
+    
     var isVisibleInSchedule: Bool {
+        // read kann erstmal ignoriert werden, wird im Backend eher angewendet werden
+        // nach dem Abhaken einer Änderung soll der Termin wieder normal erscheinen
         !(normalizedLabel == "geloescht" && read)
     }
 
@@ -297,17 +380,21 @@ extension CalendarEvent {
     }
 
     var unreadChangeColor: Color? {
+        unreadLabelStyle?.color
+    }
+
+    var unreadLabelStyle: (title: String, systemImage: String, color: Color)? {
         guard !read else {
             return nil
         }
 
         switch normalizedLabel {
         case "neu":
-            return AppStyle.lime
+            return ("Neu", "plus", AppStyle.lime)
         case "geaendert":
-            return AppStyle.orange
+            return ("Geändert", "pencil", AppStyle.orange)
         case "geloescht":
-            return AppStyle.magenta
+            return ("Gelöscht", "xmark", AppStyle.magenta)
         default:
             return nil
         }
@@ -378,7 +465,16 @@ extension CalendarEvent {
     }
 
     private var cleanSummary: String? {
-        normalizedText(summary)
+        guard var value = normalizedText(summary) else {
+            return nil
+        }
+// Klausurtermine ohne Stern anzeigen, macht aber das Backend offiziell schon
+        while value.hasPrefix("*") {
+            value = String(value.dropFirst())
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        return value.isEmpty ? nil : value
     }
 
     private var normalizedCategory: String? {
@@ -451,7 +547,7 @@ private func appendChange(
 
 private func formattedTimeText(start: Date?, end: Date?, showsDate: Bool) -> String? {
     let dateStyle: Date.FormatStyle.DateStyle = showsDate ? .abbreviated : .omitted
-
+ // viel fallback aus Gründen
     switch (start, end) {
     case let (start?, end?):
         return "\(start.formatted(date: dateStyle, time: .shortened)) - \(end.formatted(date: .omitted, time: .shortened))"
@@ -471,7 +567,7 @@ private func formattedDateText(start: Date?, end: Date?) -> String? {
 
     return date.formatted(date: .abbreviated, time: .omitted)
 }
-
+ // Leerzeichenfehler auskaschieren
 private func nonEmpty(descriptions value: String?) -> String? {
     guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines),
           !value.isEmpty else {
@@ -480,7 +576,7 @@ private func nonEmpty(descriptions value: String?) -> String? {
 
     return value
 }
-
+// description(s) ja nur optional
 private func normalizedDisplayValue(_ value: String?) -> String? {
     guard let value = nonEmpty(descriptions: value) else {
         return nil
@@ -491,7 +587,7 @@ private func normalizedDisplayValue(_ value: String?) -> String? {
         .filter { !$0.isEmpty }
         .joined(separator: " ")
 }
-
+// Änderungsmagie anzeigen
 private func changedDetailText(oldValue: String?, currentValue: String?) -> String? {
     guard let oldValue = normalizedDisplayValue(oldValue),
           let currentValue = normalizedDisplayValue(currentValue),
@@ -516,7 +612,7 @@ struct EventDetailView: View {
                 DetailRow(title: "Label", value: event.label)
                 DetailRow(title: "Aktualisiert", value: detailUpdatedAtText)
             }
-
+// description(s) optional
             if let descriptions = nonEmpty(event.descriptions) {
                 Section("Beschreibung") {
                     Text(descriptions)

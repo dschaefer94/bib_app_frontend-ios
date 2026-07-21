@@ -49,6 +49,7 @@ struct TodayView: View {
                 }
 
                 if let calendarTimestamp {
+                    // timestamp kommt immer mit dem Event-Array mit, als Verifizierung der Aktualität
                     Text(timestampText(for: calendarTimestamp))
                         .font(.interCaption2)
                         .foregroundStyle(AppStyle.secondaryText)
@@ -64,7 +65,7 @@ struct TodayView: View {
             .font(.interBody)
             .navigationTitle("Kalender")
             .toolbar {
-                // ToolbarItem: Platziert ein Element in der Navigationsleiste oder einer Toolbar.
+                // ToolbarItem platziert ein Element in der Navigationsleiste oder einer Toolbar
                 ToolbarItem(placement: .topBarTrailing) {
                     if isLoading {
                         ProgressView()
@@ -74,7 +75,7 @@ struct TodayView: View {
                         } label: {
                             Image(systemName: "arrow.clockwise")
                         }
-                        // accessibilityLabel: Beschreibt das Element für assistive Technologien wie VoiceOver.
+                        // accessibilityLabel beschreibt das Element für Technologien wie VoiceOver
                         .accessibilityLabel("Kalender aktualisieren")
                     }
                 }
@@ -98,6 +99,7 @@ struct ExamsView: View {
                         Text("Es stehen keine Klausuren an.")
                             .foregroundStyle(AppStyle.secondaryText)
                     } else {
+                        // Warnung stimmt nicht
                         ForEach(events, id: \.objectID) { event in
                             EventNavigationRow(event: event, showsDate: true, showsTodayDetails: true, addsVerticalSpacing: true)
                         }

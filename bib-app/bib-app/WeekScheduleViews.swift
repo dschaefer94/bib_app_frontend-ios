@@ -234,6 +234,7 @@ struct WeekScheduleGrid: View {
     private var weekGridHeight: CGFloat {
         let timeColumnWidth: CGFloat = 44
         let spacing: CGFloat = 6
+        // xcode sagt nicht main nutzen wegen deprecation, aber das zerbombt mein ganzes Layout :(
         let screenWidth = UIScreen.main.bounds.width - 24
         let cellSize = max(44, (screenWidth - timeColumnWidth - (spacing * 5)) / 5)
         return 34 + spacing + (cellSize * CGFloat(ScheduleBlock.allCases.count)) + (spacing * CGFloat(ScheduleBlock.allCases.count - 1)) + 16
@@ -278,6 +279,7 @@ struct WeekBlockCell: View {
                     if events.count == 1, let event = events.first {
                         WeekEventLink(event: event, showsIconOnly: false)
                     } else {
+                        // angeblich fehlender Import von CoreData, aber stimmt nicht!
                         ForEach(events, id: \.objectID) { event in
                             WeekEventLink(event: event, showsIconOnly: true)
                         }

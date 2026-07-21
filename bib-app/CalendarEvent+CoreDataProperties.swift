@@ -25,6 +25,7 @@ extension CalendarEvent {
     @NSManaged public var label: String?
     @NSManaged public var lecturer: String?
     @NSManaged public var location: String?
+    //read wird evtl. entfernt und die Logik ins Backend ausgelagert
     @NSManaged public var read: Bool
     @NSManaged public var start: Date?
     @NSManaged public var summary: String?

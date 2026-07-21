@@ -2,7 +2,7 @@ import SwiftUI
 // Platzhalter, hier kann man einen Identity-Provider verbinden, z.B. Cognito
 // gerade aber noch inaktiv, weil Cognito nicht wie geplant funktionieren wollte.
 // Anbindung kann aus der aws-Doku gecopy-pastet werden und mit Issuer-URI versehen werden.
-// Login-View ebenso
+// Login-View ebenso, auch wenn fürs Projekt out-of-scope
 struct ProfileView: View {
     @State private var firstName = "Daniel"
     @State private var lastName = "Schäfer"

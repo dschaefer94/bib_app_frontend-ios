@@ -59,7 +59,6 @@ struct ContentView: View {
         .background(AppStyle.background)
     }
 
-    // @ViewBuilder: Erlaubt es, eine View-Struktur mit logischen Bedingungen (switch/if) zu definieren.
     @ViewBuilder
     private var selectedView: some View {
         switch selectedTab {
@@ -130,6 +129,7 @@ struct ContentView: View {
             .flatMap { calendar in
                 calendar.events?.allObjects as? [CalendarEvent] ?? []
             }
+        // fallback, falls Termine in Datei unsortiert
             .sorted {
                 ($0.start ?? .distantFuture) < ($1.start ?? .distantFuture)
             }
